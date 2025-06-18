@@ -1,0 +1,2 @@
+[router]
+alt-router ansible_host=192.168.1.190 ansible_user=root

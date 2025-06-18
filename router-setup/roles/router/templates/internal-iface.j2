@@ -1,0 +1,5 @@
+BOOTPROTO=static
+TYPE=eth
+IPADDR={{ internal_ip.split('/')[0] }}
+NETMASK={{ (internal_ip | ipaddr('netmask')).split('/')[-1] }}
+ONBOOT=yes

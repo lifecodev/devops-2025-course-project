@@ -1,0 +1,5 @@
+- name: Настройка ALT Linux как маршрутизатора
+  hosts: router
+  become: yes
+  roles:
+    - router
