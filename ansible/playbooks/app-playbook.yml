@@ -20,12 +20,6 @@
         curl -sSL {{ gpg_key_url }} | apt-key add -
       args:
         warn: false  # Игнорировать предупреждения о deprecated apt-key
-
-    - name: Добавление репозитория QHB
-      apt_repository:
-        repo: "deb [arch=amd64] {{ qhb_repo_url }} stretch main"
-        state: present
-        filename: qhb.list
         
     - name: Добавление репозитория через shell
       raw: |
