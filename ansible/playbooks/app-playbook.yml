@@ -1,0 +1,62 @@
+---
+- name: Установка QHB на Astra Linux
+  hosts: astra_linux
+  become: yes
+  vars:
+    qhb_repo_url: "https://repo.quantom.info/qhb/std-1/astra-smolensk/1.7/"
+    gpg_key_url: "https://repo.quantom.info/qhb/keys/RPM-GPG-KEY-qhb"
+    
+  tasks:
+    - name: Установка зависимостей
+      apt:
+        name:
+          - libicu60
+          - libgostcrypto0.6
+          - ca-certificates
+          - gnupg2
+          - wget
+        state: present
+        update_cache: yes
+
+    - name: Импорт GPG-ключа
+      apt_key:
+        url: "{{ gpg_key_url }}"
+        state: present
+
+    - name: Добавление репозитория QHB
+      apt_repository:
+        repo: "deb [arch=amd64] {{ qhb_repo_url }} stretch main"
+        state: present
+        filename: qhb.list
+
+    - name: Обновление кеша apt
+      apt:
+        update_cache: yes
+
+    - name: Установка основных пакетов QHB
+      apt:
+        name:
+          - qhb-core
+          - qhb-contrib
+          - qcp
+          - qdl
+        state: present
+
+    - name: Добавление /usr/local/qhb/bin в PATH
+      lineinfile:
+        path: /etc/environment
+        regexp: '^PATH='
+        line: 'PATH="/usr/local/qhb/bin:$PATH"'
+        state: present
+
+    - name: Создание каталога данных
+      file:
+        path: /var/lib/qhb/data
+        owner: qhb
+        group: qhb
+        state: directory
+        mode: '0755'
+
+    - name: Инициализация кластера
+      command: /usr/local/qhb/bin/qhb_bootstrap -D /var/lib/qhb/data -U qhb
+      become_user: qhb

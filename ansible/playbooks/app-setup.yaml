@@ -1,0 +1,65 @@
+- name: Конфигурация QHB
+  hosts: astra_linux
+  become: yes
+  vars:
+    admin_user: "qhb_admin"
+    admin_password: "!ChangeThisPassword123"
+    test_db: "testdb"
+
+  tasks:
+  - name: Копирование основного конфига
+    template:
+      src: templates/qhb.conf.j2
+      dest: /var/lib/qhb/data/qhb.conf
+      owner: qhb
+      group: qhb
+      mode: '0644'
+    notify: restart qhb
+
+  - name: Настройка аутентификации
+    blockinfile:
+      path: /var/lib/qhb/data/qhb_hba.conf
+      block: |
+        # TYPE  DATABASE        USER            ADDRESS                 METHOD
+        local   all             all                                     trust
+        host    all             all             127.0.0.1/32            scram-sha-256
+        host    all             all             ::1/128                 scram-sha-256
+      owner: qhb
+      group: qhb
+    notify: restart qhb
+
+  - name: Создание административной роли
+    community.postgresql.postgresql_user:
+      login_user: qhb
+      login_host: localhost
+      user: "{{ admin_user }}"
+      password: "{{ admin_password }}"
+      role_attr_flags: "SUPERUSER,CREATEDB,CREATEROLE,LOGIN"
+      db: postgres
+
+  - name: Запуск службы QHB
+    systemd:
+      name: qhb
+      state: started
+      enabled: yes
+      daemon_reload: yes
+
+  - name: Проверка доступности
+    wait_for:
+      port: 5432
+      delay: 10
+      timeout: 60
+
+  - name: Создание тестовой БД
+    community.postgresql.postgresql_db:
+      name: "{{ test_db }}"
+      owner: "{{ admin_user }}"
+      login_user: "{{ admin_user }}"
+      login_password: "{{ admin_password }}"
+      login_host: localhost
+
+  handlers:
+    - name: restart qhb
+      systemd:
+        name: qhb
+        state: restarted
