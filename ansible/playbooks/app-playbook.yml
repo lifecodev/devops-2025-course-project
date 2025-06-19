@@ -12,9 +12,18 @@
     - name: Установка Docker
       raw: |
         apt-get update && 
-        sudo apt install docker.io
+        sudo apt install docker.io docker-compose
       changed_when: false
       
     - name: Права для user docker
       raw: sudo usermod -aG docker $USER
       changed_when: false
+
+    - name: Получение Dockerfile СУБД
+      raw: wget https://repo.granit-concern.ru/qhb/std-1/docker/qhb-docker-image.tar.gz -O - | tar -xz
+      changed_when: false
+
+    - name: Поднятие контейнера
+      raw: cd qhb-docker-image && docker-compose build && docker-compose up -d
+      changed_when: false
+    
