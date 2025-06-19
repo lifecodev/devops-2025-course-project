@@ -8,11 +8,3 @@ services:
       - USER
     volumes:
       - ./qhb/pgdata:/qhb-data/
-
-  qcp:
-    build: qcp
-    image: qcp
-    network_mode: "host"
-    entrypoint: ["echo", "Service qcp disabled"]  # Comment this line if will use QCP
-    volumes:
-      - ./qcp/config.yaml:/config.yaml:ro
