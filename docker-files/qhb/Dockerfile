@@ -31,13 +31,6 @@ RUN mkdir -p "$PGDATA" "$DB_SOCKETS_PATH" && \
 RUN chmod +x /server.sh
 RUN chmod +x /run.sh
 
-RUN groupadd -r user && useradd -r -g user user
-USER user
-
-RUN chown -R user "$PGDATA" "$DB_SOCKETS_PATH"
-
 VOLUME ["$PGDATA", "$DB_SOCKETS_PATH"]
-
-
 
 ENTRYPOINT ["/server.sh"]
