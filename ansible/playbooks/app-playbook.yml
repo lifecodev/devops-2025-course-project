@@ -27,6 +27,6 @@
       changed_when: false
 
     - name: Поднятие контейнера
-      raw: cd ~/qhb-docker/ && docker-compose build && docker-compose up -d
+      raw: cd qhb-docker && docker-compose build && docker-compose up -d
       changed_when: false
     
