@@ -1,4 +1,4 @@
-FROM centos:8
+FROM centos:latest
 
 RUN  yum -y update && \
      yum -y -q install epel-release centos-release-scl && \
