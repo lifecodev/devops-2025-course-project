@@ -4,7 +4,7 @@ services:
     build: qhb
     image: qhb
     ports:
-      - 5432
+      - "5432:5432"
     environment:
       - USER
     volumes:
