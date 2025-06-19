@@ -5,28 +5,24 @@
   gather_facts: false
   vars:
     ansible_python_interpreter: /usr/bin/python3  # Используем системный Python для apt-модулей
-    qhb_repo_url: "https://repo.quantom.info/qhb/std-1/astra-smolensk/1.7/"
-    gpg_key_url: "https://repo.quantom.info/qhb/keys/RPM-GPG-KEY-qhb"
   
   tasks:
-    - name: Установка Docker
+    - name: Установка Docker и Git
       raw: |
         apt-get update && 
-        sudo apt install docker.io docker-compose
+        sudo apt install docker.io docker-compose git
       changed_when: false
       
     - name: Права для user docker
       raw: sudo usermod -aG docker $USER
       changed_when: false
-
+      
     - name: Получение Dockerfile СУБД
       raw: |
-        mkdir qhb-docker &&
-        cd qhb-docker &&
-        wget https://repo.granit-concern.ru/qhb/std-1/docker/qhb-docker-image.tar.gz -O - | tar -xz
+        git clone https://github.com/lifecodev/devops-2025-course-project.git
       changed_when: false
 
     - name: Поднятие контейнера
-      raw: cd qhb-docker && docker-compose build && docker-compose up -d
+      raw: cd devops-2025-course-project/docker-files/ && docker-compose build && docker-compose up -d
       changed_when: false
     
