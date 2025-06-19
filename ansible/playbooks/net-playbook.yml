@@ -1,0 +1,126 @@
+---
+- name: Управление /etc/hosts
+  hosts: all
+  become: yes
+  vars:
+    hosts_entries:
+      - { ip: "10.0.2.4", hostname: "redos.internal", comment: "# Network router" }
+      - { ip: "10.0.2.6", hostname: "astra.internal", comment: "# Main application" }
+      - { ip: "10.0.2.5", hostname: "alt.internal", comment: "# Client" }
+
+  tasks:
+    - name: Бэкап оригинального файла hosts
+      copy:
+        src: /etc/hosts
+        dest: /etc/hosts.bak
+        remote_src: yes
+      changed_when: false
+      tags: backup
+
+    - name: Добавление/обновление записей
+      lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ item.ip }}\\s+{{ item.hostname }}\\s*"
+        line: "{{ item.ip }}\t{{ item.hostname }}\t{{ item.comment }}"
+        state: present
+        validate: '/usr/sbin/visudo -cf %s'
+      loop: "{{ hosts_entries }}"
+      tags: configure
+
+    - name: Удалить старые записи
+      lineinfile:
+        path: /etc/hosts
+        regexp: "^{{ '^' + item.ip if item.ip else '.*' }}\\s+.*"
+        state: absent
+      loop: "{{ hosts_entries }}"
+      when: item.state == 'absent'|default(false)
+      tags: cleanup
+
+    - name: Проверить синтаксис
+      command: getent hosts {{ item.hostname }}
+      loop: "{{ hosts_entries }}"
+      register: validation
+      ignore_errors: yes
+      changed_when: false
+      tags: verify
+
+    - name: Показать результат валидации
+      debug:
+        msg: "Validation failed for {{ item.item.hostname }}"
+      loop: "{{ validation.results }}"
+      when: item.rc != 0
+      tags: verify
+
+- name: RedOS настройка как роутера
+  hosts: redos
+  become: yes
+
+  tasks:
+    # 1. Включение IP-форвардинга
+    - name: Включение IP-форвардинга
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+        state: present
+        reload: yes
+
+    # 2. Сохранение правил iptables
+    - name: Сохранение правил iptables
+      ansible.builtin.copy:
+        content: "{{ ansible_facts.iptables }}"
+        dest: /etc/iptables/rules.v4
+      when: ansible_facts.iptables is defined
+
+- name: Настройка серверов
+  hosts: all:!redos
+  become: yes
+  vars:
+    gateway_ip: "10.0.2.4"
+
+  tasks:
+    # 1. Настройка шлюза по умолчанию
+    - name: Настройка шлюза по умолчанию
+      ansible.builtin.lineinfile:
+        path: /etc/network/interfaces
+        regexp: "^\\s*gateway\\s+"
+        line: "    gateway {{ gateway_ip }}"
+        insertafter: "^iface {{ ansible_default_ipv4.alias }} inet static"
+
+    # 2. Применение настроек сети
+    - name: Restart networking service
+      ansible.builtin.service:
+        name: networking
+        state: restarted
+      when: ansible_distribution == 'Debian'
+
+    - name: Restart NetworkManager
+      ansible.builtin.service:
+        name: NetworkManager
+        state: restarted
+      when: ansible_distribution == 'RedHat'
+
+    # 3. Проверка маршрутизации
+    - name: Проверка маршрутизации
+      ansible.builtin.shell: |
+        ip route show default | awk '{print $3}'
+      register: route_output
+      changed_when: false
+
+    - name: Validate correct gateway
+      ansible.builtin.assert:
+        that: route_output.stdout == gateway_ip
+        fail_msg: "Incorrect gateway configured!"
+
+- name: Настройка фаерволла ufw
+  hosts: astra_linux
+  become: yes
+  vars:
+    client_ip: "10.0.2.5"
+    port: "5432"
+  tasks:
+    - name: ufw allow
+      community.general.ufw:
+        rule: allow
+        from_ip: "{{ client_ip }}"
+        port: "{{ port }}"
+        proto: tcp
