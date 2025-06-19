@@ -19,10 +19,6 @@ RUN  sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo  && \
 
 RUN yum install -y qhb-core qhb-contrib
 
-RUN groupadd -r user && useradd -r -g user user
-
-USER user
-
 COPY ./scripts/server.sh /server.sh
 COPY ./scripts/run.sh /run.sh
 
@@ -35,5 +31,9 @@ RUN mkdir -p "$PGDATA" "$DB_SOCKETS_PATH" && \
 RUN chmod +x /server.sh
 RUN chmod +x /run.sh
 VOLUME ["$PGDATA", "$DB_SOCKETS_PATH"]
+
+RUN groupadd -r user && useradd -r -g user user
+
+USER user
 
 ENTRYPOINT ["/server.sh"]
