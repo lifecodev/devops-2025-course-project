@@ -15,19 +15,26 @@
         apt-get install -y gnupg2 apt-transport-https wget ca-certificates
       changed_when: false
 
-    - name: Импорт GPG-ключа
-      apt_key:
-        url: "{{ gpg_key_url }}"
-        state: present
+    - name: Ручной импорт GPG-ключа
+      raw: |
+        curl -sSL {{ gpg_key_url }} | apt-key add -
+      args:
+        warn: false  # Игнорировать предупреждения о deprecated apt-key
 
     - name: Добавление репозитория QHB
       apt_repository:
         repo: "deb [arch=amd64] {{ qhb_repo_url }} stretch main"
         state: present
         filename: qhb.list
+        
+    - name: Добавление репозитория через shell
+      raw: |
+        echo "deb [arch=amd64] {{ qhb_repo_url }} stretch main" > /etc/apt/sources.list.d/qhb.list
 
     - name: Установка основных пакетов QHB
-      raw: apt-get install -y qhb-core qhb-contrib qcp qdl
+      raw: |
+        apt-get update -qq && 
+        apt-get install -y qhb-core qhb-contrib qcp qdl
       changed_when: false
 
 - name: Настройка QHB (Python 3.9)
@@ -40,78 +47,25 @@
     test_db: "testdb"
 
   tasks:
-    - name: Добавление PATH для QHB
-      lineinfile:
-        path: /etc/environment
-        regexp: '^PATH='
-        line: 'PATH="/usr/local/qhb/bin:$PATH"'
-        state: present
-
-    - name: Создание каталога данных
-      file:
-        path: /var/lib/qhb/data
-        owner: qhb
-        group: qhb
-        state: directory
-        mode: '0755'
-
-    - name: Инициализация кластера
-      command: /usr/local/qhb/bin/qhb_bootstrap -D /var/lib/qhb/data -U qhb
+    - name: Проверка доступности Python 3.9
+      command: python3.9 --version
+      register: py_check
+      changed_when: false
+      
+    - name: Настройка окружения QHB
+      raw: |
+        /usr/local/qhb/bin/qhb_bootstrap -D /var/lib/qhb/data -U qhb
       become_user: qhb
-
-    - name: Копирование основного конфига
-      template:
-        src: templates/qhb.conf.j2
-        dest: /var/lib/qhb/data/qhb.conf
-        owner: qhb
-        group: qhb
-        mode: '0644'
-      notify: restart qhb
-
-    - name: Настройка аутентификации
-      blockinfile:
-        path: /var/lib/qhb/data/qhb_hba.conf
-        block: |
-          # TYPE  DATABASE        USER            ADDRESS                 METHOD
-          local   all             all                                     trust
-          host    all             all             127.0.0.1/32            scram-sha-256
-          host    all             all             ::1/128                 scram-sha-256
-        owner: qhb
-        group: qhb
-      notify: restart qhb
 
     - name: Запуск службы QHB
       systemd:
         name: qhb
         state: started
         enabled: yes
-        daemon_reload: yes
 
-    - name: Проверка доступности
-      wait_for:
-        port: 5432
-        delay: 10
-        timeout: 60
-
-    - name: Создание административной роли
-      community.postgresql.postgresql_user:
-        login_user: qhb
-        login_host: localhost
-        user: "{{ admin_user }}"
-        password: "{{ admin_password }}"
-        role_attr_flags: "SUPERUSER,CREATEDB,CREATEROLE,LOGIN"
-        db: postgres
-
-    - name: Создание тестовой БД
-      community.postgresql.postgresql_db:
-        name: "{{ test_db }}"
-        owner: "{{ admin_user }}"
-        login_user: "{{ admin_user }}"
-        login_password: "{{ admin_password }}"
-        login_host: localhost
-
-  handlers:
-    - name: restart qhb
-      systemd:
-        name: qhb
-        state: restarted
+    - name: Создание администратора БД
+      command: >
+        psql -U qhb -d postgres -c 
+        "CREATE USER {{ admin_user }} WITH SUPERUSER PASSWORD '{{ admin_password }}';"
+      environment:
+        PGPASSWORD: "{{ admin_password }}"
