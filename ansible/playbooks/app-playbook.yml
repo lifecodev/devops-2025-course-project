@@ -14,5 +14,7 @@
         apt-get update && 
         apt-get install -y docker.io
       changed_when: false
-
-   
+      
+    - name: Права для user docker
+      raw: sudo usermod -aG docker $USER
+      chaned_when: false
