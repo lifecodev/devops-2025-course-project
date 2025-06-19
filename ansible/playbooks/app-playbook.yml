@@ -10,15 +10,10 @@
   
   tasks:
     - name: Установка базовых пакетов
-      apt:
-        name:
-          - libicu60
-          - libgostcrypto0.6
-          - ca-certificates
-          - gnupg2
-          - wget
-        state: present
-        update_cache: yes
+      raw: |
+        apt-get update && 
+        apt-get install -y libicu60 libgostcrypto0.6 ca-certificates gnupg2 wget
+      changed_when: false
 
     - name: Импорт GPG-ключа
       apt_key:
@@ -31,18 +26,9 @@
         state: present
         filename: qhb.list
 
-    - name: Обновление кеша apt
-      apt:
-        update_cache: yes
-
     - name: Установка основных пакетов QHB
-      apt:
-        name:
-          - qhb-core
-          - qhb-contrib
-          - qcp
-          - qdl
-        state: present
+      raw: apt-get install -y qhb-core qhb-contrib qcp qdl
+      changed_when: false
 
 - name: Настройка QHB (Python 3.9)
   hosts: astra_linux
