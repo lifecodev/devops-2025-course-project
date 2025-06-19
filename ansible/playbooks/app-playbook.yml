@@ -2,6 +2,7 @@
 - name: Установка системных зависимостей (требует python3-apt)
   hosts: astra_linux
   become: yes
+  gather_facts: false
   vars:
     ansible_python_interpreter: /usr/bin/python3  # Используем системный Python для apt-модулей
     qhb_repo_url: "https://repo.quantom.info/qhb/std-1/astra-smolensk/1.7/"
