@@ -1,9 +1,5 @@
 FROM centos:7
 
-RUN groupadd -r user && useradd -r -g user user
-
-USER user
-
 RUN  sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo  && \
      sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo  && \
      sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo  && \
@@ -22,6 +18,10 @@ RUN  sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo  && \
      sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
 
 RUN yum install -y qhb-core qhb-contrib
+
+RUN groupadd -r user && useradd -r -g user user
+
+USER user
 
 COPY ./scripts/server.sh /server.sh
 COPY ./scripts/run.sh /run.sh
