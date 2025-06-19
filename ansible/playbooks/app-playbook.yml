@@ -12,7 +12,7 @@
     - name: Установка базовых пакетов
       raw: |
         apt-get update && 
-        apt-get install -y libicu60 libgostcrypto0.6 ca-certificates gnupg2 wget
+        apt-get install -y gnupg2 apt-transport-https wget ca-certificates
       changed_when: false
 
     - name: Импорт GPG-ключа
