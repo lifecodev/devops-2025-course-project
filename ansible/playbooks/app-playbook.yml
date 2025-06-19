@@ -1,4 +1,3 @@
----
 - name: Установка QHB на Astra Linux
   hosts: astra_linux
   become: yes
