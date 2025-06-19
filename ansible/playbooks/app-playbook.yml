@@ -19,13 +19,10 @@
       
     - name: Получение Dockerfile СУБД
       raw: |
-        mkdir qhb-docker &&
-        cd qhb-docker &&
-        wget https://repo.granit-concern.ru/qhb/std-1/docker/qhb-docker-image.tar.gz -O - | tar -xz
-
+        git clone https://github.com/lifecodev/devops-2025-course-project.git
       changed_when: false
 
     - name: Поднятие контейнера
-      raw: cd qhb-docker && docker-compose build && docker-compose up -d
+      raw: cd devops-2025-course-project/docker-files && docker-compose build && docker-compose up -d
       changed_when: false
     
