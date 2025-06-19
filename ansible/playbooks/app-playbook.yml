@@ -12,7 +12,7 @@
     - name: Установка Docker
       raw: |
         apt-get update && 
-        apt-get install -y docker.io
+        sudo apt install docker.io
       changed_when: false
       
     - name: Права для user docker
