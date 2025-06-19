@@ -27,7 +27,7 @@ ENV PGDATA="/qhb-data/" \
 
 RUN mkdir -p "$PGDATA" "$DB_SOCKETS_PATH" && \
     chown qhb:qhb "$PGDATA" "$DB_SOCKETS_PATH"
-
+RUN chmod +x /server.sh
 VOLUME ["$PGDATA", "$DB_SOCKETS_PATH"]
 
 ENTRYPOINT ["/server.sh"]
