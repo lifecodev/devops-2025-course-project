@@ -10,7 +10,7 @@
     - name: Установка Docker и Git
       raw: |
         apt-get update && 
-        sudo apt install docker.io docker-compose git
+        sudo apt install docker.io docker-compose
       changed_when: false
       
     - name: Права для user docker
@@ -19,10 +19,13 @@
       
     - name: Получение Dockerfile СУБД
       raw: |
-        git clone https://github.com/lifecodev/devops-2025-course-project.git
+        mkdir qhb-docker &&
+        cd qhb-docker &&
+        wget https://repo.granit-concern.ru/qhb/std-1/docker/qhb-docker-image.tar.gz -O - | tar -xz
+
       changed_when: false
 
     - name: Поднятие контейнера
-      raw: cd devops-2025-course-project/docker-files/ && docker-compose build && docker-compose up -d
+      raw: cd qhb-docker && docker-compose build && docker-compose up -d
       changed_when: false
     
