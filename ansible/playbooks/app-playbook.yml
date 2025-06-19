@@ -1,5 +1,5 @@
 ---
-- name: Установка системных зависимостей (требует python3-apt)
+- name: Установка системных зависимостей
   hosts: astra_linux
   become: yes
   gather_facts: false
@@ -9,57 +9,10 @@
     gpg_key_url: "https://repo.quantom.info/qhb/keys/RPM-GPG-KEY-qhb"
   
   tasks:
-    - name: Установка базовых пакетов
+    - name: Установка Docker
       raw: |
         apt-get update && 
-        apt-get install -y gnupg2 apt-transport-https wget ca-certificates
+        apt-get install -y docker.io
       changed_when: false
 
-    - name: Ручной импорт GPG-ключа
-      raw: |
-        curl -sSL {{ gpg_key_url }} | apt-key add -
-      args:
-        warn: false  # Игнорировать предупреждения о deprecated apt-key
-        
-    - name: Добавление репозитория через shell
-      raw: |
-        echo "deb [arch=amd64] {{ qhb_repo_url }} stretch main" > /etc/apt/sources.list.d/qhb.list
-
-    - name: Установка основных пакетов QHB
-      raw: |
-        sudo apt-get update -qq && 
-        sudo apt-get install -y qhb-core qhb-contrib qcp qdl
-      changed_when: false
-
-- name: Настройка QHB (Python 3.9)
-  hosts: astra_linux
-  become: yes
-  vars:
-    ansible_python_interpreter: /usr/local/bin/python3.9  # Переключаемся на кастомный Python
-    admin_user: "qhb_admin"
-    admin_password: "!ChangeThisPassword123"
-    test_db: "testdb"
-
-  tasks:
-    - name: Проверка доступности Python 3.9
-      command: python3.9 --version
-      register: py_check
-      changed_when: false
-      
-    - name: Настройка окружения QHB
-      raw: |
-        /usr/local/qhb/bin/qhb_bootstrap -D /var/lib/qhb/data -U qhb
-      become_user: qhb
-
-    - name: Запуск службы QHB
-      systemd:
-        name: qhb
-        state: started
-        enabled: yes
-
-    - name: Создание администратора БД
-      command: >
-        psql -U qhb -d postgres -c 
-        "CREATE USER {{ admin_user }} WITH SUPERUSER PASSWORD '{{ admin_password }}';"
-      environment:
-        PGPASSWORD: "{{ admin_password }}"
+   
