@@ -2,6 +2,7 @@
 - name: Управление /etc/hosts
   hosts: all
   become: yes
+  gather_facts: false
   vars:
     hosts_entries:
       - { ip: "10.0.2.4", hostname: "redos.internal", comment: "# Network router" }
@@ -56,7 +57,6 @@
   become: yes
 
   tasks:
-    # 1. Включение IP-форвардинга
     - name: Включение IP-форвардинга
       sysctl:
         name: net.ipv4.ip_forward
@@ -64,7 +64,6 @@
         state: present
         reload: yes
 
-    # 2. Сохранение правил iptables
     - name: Сохранение правил iptables
       ansible.builtin.copy:
         content: "{{ ansible_facts.iptables }}"
@@ -78,7 +77,6 @@
     gateway_ip: "10.0.2.4"
 
   tasks:
-    # 1. Настройка шлюза по умолчанию
     - name: Настройка шлюза по умолчанию
       ansible.builtin.lineinfile:
         path: /etc/network/interfaces
@@ -86,7 +84,6 @@
         line: "    gateway {{ gateway_ip }}"
         insertafter: "^iface {{ ansible_default_ipv4.alias }} inet static"
 
-    # 2. Применение настроек сети
     - name: Restart networking service
       ansible.builtin.service:
         name: networking
@@ -99,7 +96,6 @@
         state: restarted
       when: ansible_distribution == 'RedHat'
 
-    # 3. Проверка маршрутизации
     - name: Проверка маршрутизации
       ansible.builtin.shell: |
         ip route show default | awk '{print $3}'
