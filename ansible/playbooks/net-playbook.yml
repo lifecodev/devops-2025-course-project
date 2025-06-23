@@ -114,9 +114,16 @@
     client_ip: "10.0.2.5"
     port: "5432"
   tasks:
-    - name: ufw allow
+    - name: Разрешить доступ с клиентского IP
       community.general.ufw:
         rule: allow
         from_ip: "{{ client_ip }}"
         port: "{{ port }}"
         proto: tcp
+
+    - name: Запретить все остальные подключения к порту
+      community.general.ufw:
+        rule: deny
+        port: "{{ port }}"
+        proto: tcp
+        comment: "Block all except {{ client_ip }}"

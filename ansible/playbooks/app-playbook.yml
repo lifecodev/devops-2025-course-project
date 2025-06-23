@@ -10,7 +10,7 @@
     - name: Установка Docker и Git
       raw: |
         apt-get update && 
-        sudo apt install docker.io docker-compose
+        sudo apt install docker.io docker-compose git
       changed_when: false
       
     - name: Права для user docker
